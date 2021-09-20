@@ -13,9 +13,9 @@ function getColumnKeyDesc($field, $key) {
 		return "PRIMARY KEY";
 	} else if ($key == "UNI") {
 		return "UNIQUE";
-	} else if ($key == "MUL") {
+	}/* else if ($key == "MUL") {
 		return "index(" . $field . ")";
-	}
+	}*/
 	return "";
 }
 
@@ -48,7 +48,7 @@ class MySQLColumn {
 }
 
 class MySQLTable {
-	private $properties;
+	public $properties;
 	private $columns = [];
 	private $column_names = [];
 	private $schema;
@@ -56,6 +56,7 @@ class MySQLTable {
 	private $row_count;
 	private $mysql_connection;
 	private $creation_query;
+	private $insertion_column_names_cahced;
 	
 	public function __construct($mysql_connection, $properties) {
 		$this->properties = $properties;
@@ -70,8 +71,16 @@ class MySQLTable {
 		return $this->name;
 	}
 	
+	public function getSchema() {
+		return $this->schema;
+	}
+	
 	public function getCreationQuery() {
 		return $this->creation_query;
+	}
+	
+	public function getRowsCount() {
+		return $this->row_count;
 	}
 	
 	public function getRowsInRange($offset, $limit) {
@@ -85,16 +94,24 @@ class MySQLTable {
 	}
 	
 	public function buildRowsQueryInRange($offset, $limit) {
-		$store_query = "";
-		$rows = $this->getRowsInRange($offset, $limit);
-		foreach ($rows as $index => $row) {
-			array_push($mashaled_rows, mysqlMoverMashal($this->columns, $row));
+		$store_query = "INSERT INTO " . $this->schema . "." . $this->name . " (" . $this->insertion_column_names_cahced . ") VALUES ";
+		$mashaled_rows = $this->getRowsInRange($offset, $limit);
+		$mashaled_rows_count = count($mashaled_rows);
+		$column_names_count = count($this->column_names);
+		foreach ($mashaled_rows as $index => $mashaled_row) {
+			$store_query .= "	(";
+			foreach ($this->column_names as $column_name_index => $column_name) {
+				$store_query .= "'" . $mashaled_row->$column_name . "'" . ($column_name_index < $column_names_count-1 ? ", " : "");
+			}
+			$store_query .= ")" . ($index < $mashaled_rows_count-1 ? ", \n" : "") . "";
 		}
+		$store_query .= ';';
 		return $store_query;
 	}
 	
 	private function fetchColumns() {
-		$this->creation_query = "CREATE TABLE " . $this->schema . "." . $this->name . " (\n";
+		$this->creation_query = "CREATE TABLE IF NOT EXISTS " . $this->schema . "." . $this->name . " (\n";
+		$this->insertion_column_names_cahced = "";
 		$rows = $this->mysql_connection->getTableHeader($this->schema, $this->name);
 		$rows_count = count($rows);
 		foreach ($rows as $index => $row) {
@@ -110,8 +127,9 @@ class MySQLTable {
 			$this->creation_query .= "	" . $column->Field . " " . $column->Type . " " . getColumnExtraDesc($column->Field, $column->Extra) . " " . 
 				(!$column->Null ? "NOT NULL" : "") . " " . getColumnDefaultDesc($column->Field, $column->Default) . " " . getColumnKeyDesc($column->Field, $column->Key) . 
 				($index < $rows_count-1 ? "," : "") . "\n";
+			$this->insertion_column_names_cahced .= $column->Field . "" . ($index < $rows_count-1 ? ", " : "");
 		}
-		$this->creation_query .= ")";
+		$this->creation_query .= ");";
 	}
 	
 }
@@ -130,6 +148,14 @@ class MySQLDatabase {
 	
 	public function getTables() {
 		return $this->tables;
+	}
+	
+	public function getSchema() {
+		return $this->schema;
+	}
+	
+	public function getCreationQuery() {
+		return "CREATE SCHEMA IF NOT EXISTS " . $this->schema . ";";
 	}
 	
 	public function getTable($table_name) {
@@ -156,6 +182,12 @@ class MySqlConnection {
 	private $username = "root";
 	private $password = "";
 	private $conn = null;
+	private $databases = [];
+	
+	public function __construct() {
+		$this->createConnection();
+		$this->fetchAllDatabases();
+	}
 	
 	private function createConnection() {
 		if ($this->conn != null) {
@@ -167,13 +199,18 @@ class MySqlConnection {
 		}
 	}
 	
+	private function fetchAllDatabases() {
+		$result_rows = $this->executeQuery("SHOW DATABASES;")->fetch_all();
+		foreach ($result_rows as $index => $result_row) {
+			array_push($this->databases, new MySQLDatabase($this, $result_row[0]));
+		}
+	}
+	
 	function getConn() {
-		$this->createConnection();
 		return $this->conn;
 	}
 	
 	function executeQuery($query) {
-		$this->createConnection();
 		return $this->conn->query($query);
 	}
 	
@@ -189,8 +226,16 @@ class MySqlConnection {
 	}
 	
 	function getDatabase($schema) {
-		$database = new MySQLDatabase($this, $schema);
-		return $database;
+		foreach ($this->databases as $index => $database) {
+			if ($database->getSchema() == $schema) {
+				return $database;
+			}
+		}
+		return null;
+	}
+	
+	function getDatabases() {
+		return $this->databases;
 	}
 	
 }
