@@ -2,8 +2,17 @@
 
 include "connection.php";
 
-$mysqlConnection = new MySqlConnection();
-$database = $mysqlConnection->getDatabase('assignment');
+$test_connection = false;
+
+if ($test_connection) {
+	$mysqlConnection = new MySqlConnection();
+	$database = $mysqlConnection->getDatabase('assignment');
+	$test_table = $database->getTable('account');
+	echo ($test_table->getCreationQuery());
+	echo '<br/>';
+	$rows = $test_table->getRowsInRange(0, 20);
+	var_dump($rows);
+}
 
 ?>
 <html>
