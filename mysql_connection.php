@@ -113,6 +113,7 @@ class MySQLTable {
 		$store_query = "INSERT INTO " . $this->schema . "." . $this->name . " (" . $this->insertion_column_names_cahced . ") VALUES ";
 		$mashaled_rows = $this->getRowsInRange($offset, $limit);
 		$mashaled_rows_count = count($mashaled_rows);
+		if ($mashaled_rows_count == 0) return "";
 		$column_names_count = count($this->column_names);
 		foreach ($mashaled_rows as $index => $mashaled_row) {
 			$store_query .= "	(";

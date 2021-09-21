@@ -4,6 +4,7 @@ include "mysql_connection.php";
 
 $mysqlConnection = new MySqlConnection();
 $databases = $mysqlConnection->getDatabases();
+$database = null;
 $selected_table = null;
 $tables = [];
 $sql_migration_query = "";
@@ -12,7 +13,8 @@ $show_table_creation_query = isset($_GET['show-table-creation-query']) && $_GET[
 $row_from = isset($_GET['row-from']) ? $_GET['row-from'] : 0;
 $row_to = isset($_GET['row-to']) ? $_GET['row-to'] : 50;
 if (isset($_GET['database'])) {
-	$tables = $mysqlConnection->getDatabase($_GET['database'])->getTables();
+	$database = $mysqlConnection->getDatabase($_GET['database']);
+	$tables = $database->getTables();
 	if ($show_schema_creation_query) {
 		$sql_migration_query .= $database->getCreationQuery() . "\n\n";
 	}
