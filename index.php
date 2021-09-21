@@ -2,7 +2,7 @@
 
 include "mysql_connection.php";
 
-$test_connection = true;
+$test_connection = false;
 $mysqlConnection = new MySqlConnection();
 
 if ($test_connection) {
@@ -44,7 +44,7 @@ $total_rows_count = ($selected_table != null ? $selected_table->getRowsCount() :
 ?>
 <html>
 	<head>
-		<title>MySQLMover - Sender</title>
+		<title>MySQLMover</title>
 	</head>
 	<body>
 		<div style="display: flex; flex-wrap: wrap; padding: 20px; height: 100%;">

@@ -84,11 +84,27 @@ class MySQLTable {
 	}
 	
 	public function getRowsInRange($offset, $limit) {
-		//$tables_info_headers = $this->mysql_connection->getTableHeader(null, "INFORMATION_SCHEMA.TABLES");
-		$rows = $this->mysql_connection->executeQueryFetchMultiple("SELECT * FROM " . $this->schema . "." . $this->name . " LIMIT " . $limit . " OFFSET " . $offset . ";");
+		return $this->executeQuery("SELECT * FROM " . $this->schema . "." . $this->name . " LIMIT " . $limit . " OFFSET " . $offset . ";");
+	}
+	
+	public function executeQuery($sql) {
+		$rows = $this->mysql_connection->executeQueryFetchMultiple($sql);
+		return $this->mashalRows($rows);
+	}
+	
+	public function executeQueryRaw($sql) {
+		$result = $this->mysql_connection->executeQuery($sql);
+		return $result;
+	}
+	
+	public function mashalRow($row) {
+		return mysqlMoverMashal($this->columns, $row);
+	}
+	
+	public function mashalRows($rows) {
 		$mashaled_rows = [];
 		foreach ($rows as $index => $row) {
-			array_push($mashaled_rows, mysqlMoverMashal($this->columns, $row));
+			array_push($mashaled_rows, $this->mashalRow($row));
 		}
 		return $mashaled_rows;
 	}
@@ -101,7 +117,11 @@ class MySQLTable {
 		foreach ($mashaled_rows as $index => $mashaled_row) {
 			$store_query .= "	(";
 			foreach ($this->column_names as $column_name_index => $column_name) {
-				$store_query .= "'" . $mashaled_row->$column_name . "'" . ($column_name_index < $column_names_count-1 ? ", " : "");
+				$column_value = 'null';
+				if ($mashaled_row->$column_name != null && $mashaled_row->$column_name != "") {
+					$column_value = "'" . $mashaled_row->$column_name . "'";
+				}
+				$store_query .= $column_value . ($column_name_index < $column_names_count-1 ? ", " : "");
 			}
 			$store_query .= ")" . ($index < $mashaled_rows_count-1 ? ", \n" : "") . "";
 		}
@@ -211,7 +231,9 @@ class MySqlConnection {
 	}
 	
 	function executeQuery($query) {
-		return $this->conn->query($query);
+		$result = $this->conn->query($query);
+		if (!$result) die(mysqli_error($this->conn));
+		return $result;
 	}
 	
 	function executeQueryFetchMultiple($query) {
