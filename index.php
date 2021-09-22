@@ -34,11 +34,13 @@ if (isset($_GET['database'])) {
 	
 	if (isset($_GET['table'])) {
 		$selected_table = $mysqlConnection->getDatabase($_GET['database'])->getTable($_GET['table']);
-		if ($show_table_creation_query) {
-			$sql_migration_query .= $selected_table->getCreationQuery() . "\n\n";
-		}
-		
-		$sql_migration_query .= $selected_table->buildRowsQueryInRange($row_from, $row_to) . "\n";		
+		if ($selected_table != null) {
+			if ($show_table_creation_query) {
+				$sql_migration_query .= $selected_table->getCreationQuery() . "\n\n";
+			}
+			
+			$sql_migration_query .= $selected_table->buildRowsQueryInRange($row_from, $row_to) . "\n";	
+		}	
 	}
 }
 $total_rows_count = ($selected_table != null ? $selected_table->getRowsCount() : 0);

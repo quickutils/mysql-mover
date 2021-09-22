@@ -8,6 +8,7 @@ $database = null;
 $selected_table = null;
 $tables = [];
 $sql_migration_query = "";
+$selected_columns = null;
 $show_schema_creation_query = isset($_GET['show-schema-creation-query']) && $_GET['show-schema-creation-query'] == 'on';
 $show_table_creation_query = isset($_GET['show-table-creation-query']) && $_GET['show-table-creation-query'] == 'on';
 $row_from = isset($_GET['row-from']) ? $_GET['row-from'] : 0;
@@ -21,11 +22,14 @@ if (isset($_GET['database'])) {
 	
 	if (isset($_GET['table'])) {
 		$selected_table = $mysqlConnection->getDatabase($_GET['database'])->getTable($_GET['table']);
-		if ($show_table_creation_query) {
-			$sql_migration_query .= $selected_table->getCreationQuery() . "\n\n";
-		}
-		
-		$sql_migration_query .= $selected_table->buildRowsQueryInRange($row_from, $row_to) . "\n";		
+		if ($selected_table != null) {
+			if ($show_table_creation_query) {
+				$sql_migration_query .= $selected_table->getCreationQuery() . "\n\n";
+			}
+			
+			$selected_columns = $selected_table->getRowsInRange($row_from, $row_to);
+			$sql_migration_query .= $selected_table->buildRowsQueryInRange($row_from, $row_to) . "\n";	
+		}			
 	}
 }
 $total_rows_count = ($selected_table != null ? $selected_table->getRowsCount() : 0);
@@ -34,9 +38,27 @@ $total_rows_count = ($selected_table != null ? $selected_table->getRowsCount() :
 <html>
 	<head>
 		<title>MySQLMover - Sender</title>
+		<style>
+		table {
+		  font-family: arial, sans-serif;
+		  border-collapse: collapse;
+		  width: 100%;
+		  overflow: auto;
+		}
+
+		td, th {
+		  border: 1px solid #dddddd;
+		  text-align: left;
+		  padding: 8px;
+		}
+
+		tr:nth-child(even) {
+		  background-color: #dddddd;
+		}
+		</style>
 	</head>
 	<body>
-		<div style="display: flex; flex-wrap: wrap; padding: 20px; height: 100%;">
+		<div style="display: flex; padding: 20px; height: 100%;">
 			<form style="display: flex;">
 				<div>
 					<h3>Select Database</h3>
@@ -68,12 +90,41 @@ $total_rows_count = ($selected_table != null ? $selected_table->getRowsCount() :
 					From: <input type="text" name="row-from" value="<?php echo $row_from; ?>" onblur="this.form.submit()"/><br/>
 					To: <input type="text" name="row-to" value="<?php echo $row_to; ?>" onblur="this.form.submit()"/><br/>
 					<br/><br/>
-					<input style="padding: 10px; color: white; background: blue; outline: none; border: none; border-radius: 10px;" type="submit" value="Migrate to specified route"/>
+					<h3>Receiver</h3>
+					Url: <input type="text" name="receiver-url" value="http://localhost:1212/receiver.php"/><br/>
+					Password: <input type="text" name="receiver-password" value="12345/><br/>
+					<br/><br/>
+					<input onclick="sendMigrationQuery()" style="padding: 10px; color: white; background: blue; outline: none; border: none; border-radius: 10px;" type="button" value="Migrate to specified route"
+						onkeydown="return event.key != 'Enter';"/>
 				</div>
 			</form>
 			<div style="flex: 1; margin: 40px;">
-				
+				<?php if ($selected_table != null) {?>
+				<table>
+					<tr>
+						<?php
+							foreach ($selected_table->getColumnNames() as $index => $column_name) {
+								echo "<th>$column_name</th>";
+							}
+						?>
+					</tr>
+					<?php
+						foreach ($selected_columns as $index => $selected_column) {
+							echo "<tr>";
+							foreach ($selected_table->getColumnNames() as $index => $column_name) {
+								echo "<td>" . $selected_column->$column_name . "</td>";
+							}
+							echo "</tr>";
+						}
+					?>
+				</table>
+				<?php }?>
 			</div>
 		</div>
 	</body>
+<script>
+function sendMigrationQuery() {
+	alert("Alert");
+}
+</script>
 </html>

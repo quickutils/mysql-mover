@@ -71,6 +71,10 @@ class MySQLTable {
 		return $this->name;
 	}
 	
+	public function getColumnNames() {
+		return $this->column_names;
+	}
+	
 	public function getSchema() {
 		return $this->schema;
 	}
@@ -202,6 +206,8 @@ class MySqlConnection {
 	private $servername = "localhost";
 	private $username = "root";
 	private $password = "";
+	private $port = "3306";
+	private $default_db = "mysql";
 	private $conn = null;
 	private $databases = [];
 	
@@ -214,7 +220,7 @@ class MySqlConnection {
 		if ($this->conn != null) {
 			return;
 		}
-		$this->conn = new mysqli($this->servername, $this->username, $this->password);
+		$this->conn = new mysqli($this->servername . ':' . $this->port, $this->username, $this->password, $this->default_db);
 		if ($this->conn->connect_error) {
 			die("Connection failed: " . $this->conn->connect_error);
 		}
