@@ -91,8 +91,8 @@ $total_rows_count = ($selected_table != null ? $selected_table->getRowsCount() :
 					To: <input type="text" name="row-to" value="<?php echo $row_to; ?>" onblur="this.form.submit()"/><br/>
 					<br/><br/>
 					<h3>Receiver</h3>
-					Url: <input type="text" name="receiver-url" value="http://localhost:1212/receiver.php"/><br/>
-					Password: <input type="text" name="receiver-password" value="12345/><br/>
+					Url: <input type="text" id="receiver-url" value="http://localhost:1212/receiver.php"/><br/>
+					Password: <input type="text" id="receiver-password" value="12345"/><br/>
 					<br/><br/>
 					<input onclick="sendMigrationQuery()" style="padding: 10px; color: white; background: blue; outline: none; border: none; border-radius: 10px;" type="button" value="Migrate to specified route"
 						onkeydown="return event.key != 'Enter';"/>
@@ -124,7 +124,13 @@ $total_rows_count = ($selected_table != null ? $selected_table->getRowsCount() :
 	</body>
 <script>
 function sendMigrationQuery() {
-	alert("Alert");
+	const receiverUrl = document.getElementById('receiver-url').value;
+	const receiverPassword = document.getElementById('receiver-password').value;
+	console.log(receiverUrl + " " + receiverPassword);
+	var xhr = new XMLHttpRequest();
+	xhr.open("POST", receiverUrl, true);
+	xhr.setRequestHeader('Content-Type', 'html/text');
+	xhr.send(`<?php echo $sql_migration_query; ?>`);
 }
 </script>
 </html>
