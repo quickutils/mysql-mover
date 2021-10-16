@@ -83,16 +83,17 @@ $total_rows_count = ($selected_table != null ? $selected_table->getRowsCount() :
 				<div style="margin: 20px; margin-top: 50px;">
 					<label>Table Total Rows Counts: <?php echo $total_rows_count; ?></label>
 					<br/><br/>
-					<label>Show Schema Creation Query</label> <input type="checkbox" name="show-schema-creation-query" <?php echo ($show_schema_creation_query ? 'checked' : ''); ?> onchange="this.form.submit()"/><br/>
-					<label>Show Table Creation Query</label> <input type="checkbox" name="show-table-creation-query" <?php echo ($show_table_creation_query ? 'checked' : ''); ?> onchange="this.form.submit()"/><br/>
+					<label>Include Schema Creation Query</label> <input type="checkbox" name="show-schema-creation-query" <?php echo ($show_schema_creation_query ? 'checked' : ''); ?> onchange="this.form.submit()"/><br/>
+					<label>Include Table Creation Query</label> <input type="checkbox" name="show-table-creation-query" <?php echo ($show_table_creation_query ? 'checked' : ''); ?> onchange="this.form.submit()"/><br/>
 					<br/><br/>
 					<label>Create Insertion Value</label><br/>
 					From: <input type="text" name="row-from" value="<?php echo $row_from; ?>" onblur="this.form.submit()"/><br/>
 					To: <input type="text" name="row-to" value="<?php echo $row_to; ?>" onblur="this.form.submit()"/><br/>
 					<br/><br/>
 					<h3>Receiver</h3>
-					Url: <input type="text" id="receiver-url" value="http://localhost:1212/receiver.php"/><br/>
-					Password: <input type="text" id="receiver-password" value="12345"/><br/>
+					Replacement Schema: <input type="text" name="replacement-db" id="replacement-db" value="<?php echo isset($_GET['replacement-db']) ? $_GET['replacement-db'] : ''; ?>"/><br/>
+					Url: <input type="text" name="receiver-url" id="receiver-url" value="<?php echo isset($_GET['receiver-url']) ? $_GET['receiver-url'] : 'http://localhost:1212/receiver.php'; ?>"/><br/>
+					Password: <input type="text" name="receiver-password" id="receiver-password" value="<?php echo isset($_GET['receiver-password']) ? $_GET['receiver-password'] : '12345'; ?>"/><br/>
 					<br/><br/>
 					<input onclick="sendMigrationQuery()" style="padding: 10px; color: white; background: blue; outline: none; border: none; border-radius: 10px;" type="button" value="Migrate to specified route"
 						onkeydown="return event.key != 'Enter';"/>
@@ -124,13 +125,21 @@ $total_rows_count = ($selected_table != null ? $selected_table->getRowsCount() :
 	</body>
 <script>
 function sendMigrationQuery() {
+	const replaceSchema = document.getElementById('replacement-db').value;
 	const receiverUrl = document.getElementById('receiver-url').value;
 	const receiverPassword = document.getElementById('receiver-password').value;
-	console.log(receiverUrl + " " + receiverPassword);
-	var xhr = new XMLHttpRequest();
-	xhr.open("POST", receiverUrl, true);
-	xhr.setRequestHeader('Content-Type', 'html/text');
-	xhr.send(`<?php echo $sql_migration_query; ?>`);
+	let sqlMigrationQuery = `<?php echo str_replace('`', '\`', $sql_migration_query) ?>`;
+	if (replaceSchema != "") {
+		sqlMigrationQuery = sqlMigrationQuery.replaceAll('`<?php echo $_GET['database'] ?>`', `\`${replaceSchema}\``);
+	}
+	//console.log(receiverUrl + " " + receiverPassword);
+	let httpRequest = new XMLHttpRequest();
+	httpRequest.open("POST", receiverUrl + "?pass=" + receiverPassword, true);
+	httpRequest.setRequestHeader('Content-Type', 'html/text');
+	httpRequest.onerror = function(response, status, error) { alert(error); };
+	httpRequest.onload = function() { alert(this.responseText); }
+	//console.log(sqlMigrationQuery);
+	httpRequest.send(sqlMigrationQuery);
 }
 </script>
 </html>

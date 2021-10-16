@@ -88,7 +88,7 @@ class MySQLTable {
 	}
 	
 	public function getRowsInRange($offset, $limit) {
-		return $this->executeQuery("SELECT * FROM " . $this->schema . "." . $this->name . " LIMIT " . $limit . " OFFSET " . $offset . ";");
+		return $this->executeQuery("SELECT * FROM `" . $this->schema . "`.`" . $this->name . "` LIMIT " . $limit . " OFFSET " . $offset . ";");
 	}
 	
 	public function executeQuery($sql) {
@@ -114,7 +114,7 @@ class MySQLTable {
 	}
 	
 	public function buildRowsQueryInRange($offset, $limit) {
-		$store_query = "INSERT INTO " . $this->schema . "." . $this->name . " (" . $this->insertion_column_names_cahced . ") VALUES ";
+		$store_query = "INSERT INTO `" . $this->schema . "`.`" . $this->name . "` (" . $this->insertion_column_names_cahced . ") VALUES ";
 		$mashaled_rows = $this->getRowsInRange($offset, $limit);
 		$mashaled_rows_count = count($mashaled_rows);
 		if ($mashaled_rows_count == 0) return "";
@@ -135,7 +135,7 @@ class MySQLTable {
 	}
 	
 	private function fetchColumns() {
-		$this->creation_query = "CREATE TABLE IF NOT EXISTS " . $this->schema . "." . $this->name . " (\n";
+		$this->creation_query = "CREATE TABLE IF NOT EXISTS `" . $this->schema . "`.`" . $this->name . "` (\n";
 		$this->insertion_column_names_cahced = "";
 		$rows = $this->mysql_connection->getTableHeader($this->schema, $this->name);
 		$rows_count = count($rows);
@@ -180,7 +180,7 @@ class MySQLDatabase {
 	}
 	
 	public function getCreationQuery() {
-		return "CREATE SCHEMA IF NOT EXISTS " . $this->schema . ";";
+		return "CREATE SCHEMA IF NOT EXISTS `" . $this->schema . "`;";
 	}
 	
 	public function getTable($table_name) {
@@ -249,7 +249,7 @@ class MySqlConnection {
 	}
 	
 	function getTableHeader($schema, $table) {
-		$query = $schema != null ? "DESCRIBE " . $schema . "." . $table . ";" : "DESCRIBE " . $table . ";";
+		$query = $schema != null ? "DESCRIBE `" . $schema . "`.`" . $table . "`;" : "DESCRIBE `" . $table . "`;";
 		$result_rows = $this->executeQuery($query)->fetch_all();
 		return $result_rows;
 	}
